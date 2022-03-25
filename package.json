@@ -1,0 +1,25 @@
+{
+  "name": "uniqueness-rating",
+  "version": "1.0.0",
+  "description": "an osu! score rating system",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Oxyyy/uniqueness-rating.git"
+  },
+  "keywords": [
+    "osu"
+  ],
+  "author": "pseh",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Oxyyy/uniqueness-rating/issues"
+  },
+  "homepage": "https://github.com/Oxyyy/uniqueness-rating#readme",
+  "dependencies": {
+    "osu-api-extended": "^2.1.3"
+  }
+}
