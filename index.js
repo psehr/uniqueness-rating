@@ -377,7 +377,7 @@ async function getUser(api, user_id) {
     })
 }
 
-login('13580', 'KMlMFkRosPDESx8Xlqe2YN3Tldlz5SgvHSH2fNuq').then(async (api) => {
+login('', '').then(async (api) => {
     const lb = await getLeaderboard(api, 714001, null, 500);
     console.log(await lb);
 });
