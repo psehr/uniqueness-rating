@@ -12,36 +12,12 @@ class Beatmap {
 class Data {
     constructor() {
         this.mapStdev = null;
-        this.userStdev = null;
-        this.lbLevel = null;
+        this.scorePPStDev = null;
+        this.userPPStDev = null;
         this.mapCoef = null;
         this.userCoef = null;
         this.lbCoef = null;
         this.finalCoef = null;
-    }
-
-    updateData(leaderboard) {
-        const p = new Promise(async (resolve, reject) => {
-            if (leaderboard instanceof Leaderboard) {
-                this.mapStdev = await getMapStDevFromLeaderboard(leaderboard);
-                this.userStdev = await getUserPPStDevFromLeaderboard(leaderboard);
-                this.lbLevel = await getUserMedianPPFromLeaderboard(leaderboard);
-                this.mapCoef = await getMapCoefFromMapStdev(this.mapStdev);
-                this.userCoef = await getUserCoefFromUserStdev(this.userStdev);
-                this.lbCoef = await getLbCoefFromLbLevel(this.lbLevel);
-                this.finalCoef = this.mapCoef * (0.5 * this.userCoef) * this.lbCoef;
-                return resolve(this);
-            }
-            return reject('Error: Invalid leaderboard')
-        })
-
-        return new Promise((resolve) => {
-            p.then(() => {
-                return resolve(this);
-            }).catch((err) => {
-                return console.error(err);
-            })
-        })
     }
 }
 
@@ -84,13 +60,41 @@ class Leaderboard {
 
     setData(data) {
         const p = new Promise((resolve, reject) => {
-            if (data instanceof Beatmap) return resolve(this.beatmap = beatmap);
-            return reject('Error: Invalid beatmap')
+            if (data instanceof Data) return resolve(this.data = data);
+            return reject('Error: Cannot update data')
         })
 
         return new Promise((resolve) => {
             p.then(() => {
                 return resolve(this);
+            }).catch((err) => {
+                return console.error(err);
+            })
+        })
+    }
+
+    updateData() {
+        const p = new Promise(async (resolve, reject) => {
+            if (this instanceof Leaderboard) {
+                var d = new Data();
+                d.mapStdev = await getMapStDevFromLeaderboard(this);
+                d.scorePPStDev = await getUserPPStDevFromLeaderboard(this);
+                d.userPPStDev = await getUserMedianPPFromLeaderboard(this);
+                d.mapCoef = await getMapCoefFromMapStdev(d.mapStdev);
+                d.userCoef = await getUserCoefFromscorePPStDev(d.scorePPStDev);
+                d.lbCoef = await getLbCoefFromuserPPStDev(d.userPPStDev);
+                d.finalCoef = d.mapCoef * (0.5 * d.userCoef) * d.lbCoef;
+                await this.setData(d);
+                return resolve(this);
+            }
+            return reject('Error: Invalid leaderboard')
+        })
+
+
+        return new Promise((resolve) => {
+            p.then((leaderboard) => {
+                console.log(leaderboard);
+                return resolve(leaderboard);
             }).catch((err) => {
                 return console.error(err);
             })
@@ -153,7 +157,7 @@ async function login_lazer(login, password) {
     })
 }
 
-// exports
+// local function (no exports)
 async function getMapStDevFromLeaderboard(leaderboard) {
     const p = new Promise(async (resolve, reject) => {
         if (!leaderboard instanceof Leaderboard) return reject('Error: Invalid leaderboard');
@@ -183,6 +187,7 @@ async function getMapStDevFromLeaderboard(leaderboard) {
     return stdev;
 }
 
+// local function (no exports)
 async function getUserPPStDevFromLeaderboard(leaderboard) {
     const p = new Promise(async (resolve, reject) => {
         if (!leaderboard instanceof Leaderboard) return reject('Error: Invalid leaderboard');
@@ -212,6 +217,7 @@ async function getUserPPStDevFromLeaderboard(leaderboard) {
     return stdev;
 }
 
+// local function (no exports)
 async function getUserMedianPPFromLeaderboard(leaderboard) {
     const p = new Promise(async (resolve, reject) => {
         if (!leaderboard instanceof Leaderboard) return reject('Error: Invalid leaderboard');
@@ -235,16 +241,19 @@ async function getUserMedianPPFromLeaderboard(leaderboard) {
     return median;
 }
 
+// local function (no exports)
 async function getMapCoefFromMapStdev(mapStdev) {
     return 1.7 / Math.log10(mapStdev);
 }
 
-async function getUserCoefFromUserStdev(userStdev) {
-    return 2.3 / Math.log10(userStdev);
+// local function (no exports)
+async function getUserCoefFromscorePPStDev(scorePPStDev) {
+    return 2.3 / Math.log10(scorePPStDev);
 }
 
-async function getLbCoefFromLbLevel(lbLevel) {
-    return Math.log2(lbLevel) - 12;
+// local function (no exports)
+async function getLbCoefFromuserPPStDev(userPPStDev) {
+    return Math.log2(userPPStDev) - 12;
 }
 
 // local function (no exports)
@@ -296,7 +305,7 @@ async function getBeatmap(api, beatmap_id) {
 // exports
 async function getLeaderboard(api, beatmap_id, mods, api_throttling) {
     const p = new Promise(async (resolve, reject) => {
-        console.clear();
+       console.clear();
         console.log(`Fetching leaderboard...`);
         if (mods) {
             await api.me.data('osu').then((auth_type) => {
@@ -307,7 +316,7 @@ async function getLeaderboard(api, beatmap_id, mods, api_throttling) {
             })
         }
         api.beatmap.scores.all(beatmap_id, { mode: 'osu', mods: mods }).then(async (leaderboard) => {
-            console.clear();
+           console.clear();
             if (!leaderboard.scores) return reject('Error: Leaderboard parsing failed');
             const pleaderboard = new Promise(async (resolve) => {
                 console.log(`Fetching leaderboard users... (API Throttling: ${api_throttling}ms)`);
@@ -322,7 +331,7 @@ async function getLeaderboard(api, beatmap_id, mods, api_throttling) {
                 })
             })
             l = await pleaderboard;
-            console.clear();
+           console.clear();
 
             const pbeatmap = new Promise(async (resolve) => {
                 console.log(`Fetching beatmap...`);
@@ -332,19 +341,17 @@ async function getLeaderboard(api, beatmap_id, mods, api_throttling) {
                 })
             })
             l = await pbeatmap;
-            console.clear();
+           console.clear();
 
             const pdata = new Promise(async (resolve) => {
                 console.log(`Calculating...`);
-                var d = new Data();
-                await d.updateData(l).then((result) => {
-                    return resolve(result)
-                })
+                await l.updateData();
+                return resolve(await l);
             })
             l = await pdata;
-            console.clear();
+           console.clear();
 
-            return resolve(l);
+            return resolve(await l);
         });
     })
 
@@ -377,11 +384,8 @@ async function getUser(api, user_id) {
     })
 }
 
-login('', '').then(async (api) => {
-    const lb = await getLeaderboard(api, 714001, null, 500);
-    console.log(await lb);
-});
-
-
-
-module.exports = login, login_lazer, getMapStDevFromLeaderboard, getUserPPStDevFromLeaderboard;
+module.exports = {
+    login,
+    login_lazer,
+    getLeaderboard
+}
