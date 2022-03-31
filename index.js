@@ -1,119 +1,126 @@
 const { v2, auth } = require('osu-api-extended');
 
-class Beatmap {
-    constructor(beatmap) {
-        this.id = beatmap?.id;
-        this.full_title = `${beatmap?.beatmapset?.artist} - ${beatmap?.beatmapset?.title_unicode} [${beatmap?.version}]`;
-        this.creator = beatmap?.beatmapset.creator;
-        this.playcount = beatmap?.playcount;
-    }
-}
-
-class Data {
-    constructor() {
-        this.mapStdev = null;
-        this.scorePPStDev = null;
-        this.userPPStDev = null;
-        this.mapCoef = null;
-        this.userCoef = null;
-        this.lbCoef = null;
-        this.finalCoef = null;
-    }
-}
-
 class Score {
-    constructor(score_id, user_id, pp, user_pp, mods) {
+    constructor(score_id, pp, mods) {
         this.score_id = score_id;
-        this.user_id = user_id;
         this.pp = pp;
-        this.user_pp = user_pp;
         this.mods = mods;
-        this.UNR = null;
-    }
-
-    setUNR(UNR) {
-        this.UNR = UNR;
     }
 }
 
-class Leaderboard {
-    constructor() {
-        this.beatmap = null;
+class Layer {
+    constructor(type) {
+        this.type = type;
+        this.mods = null;
+        this.stdev = null;
+        this.percentile = null;
+        this.average = null;
         this.scores = [];
-        this.data = null;
-    }
-
-    setBeatmap(beatmap) {
-        const p = new Promise((resolve, reject) => {
-            if (beatmap instanceof Beatmap) return resolve(this.beatmap = beatmap);
-            return reject('Error: Invalid beatmap')
-        })
-
-        return new Promise((resolve) => {
-            p.then(() => {
-                return resolve(this);
-            }).catch((err) => {
-                return console.error(err);
-            })
-        })
-    }
-
-    setData(data) {
-        const p = new Promise((resolve, reject) => {
-            if (data instanceof Data) return resolve(this.data = data);
-            return reject('Error: Cannot update data')
-        })
-
-        return new Promise((resolve) => {
-            p.then(() => {
-                return resolve(this);
-            }).catch((err) => {
-                return console.error(err);
-            })
-        })
-    }
-
-    updateData() {
-        const p = new Promise(async (resolve, reject) => {
-            if (this instanceof Leaderboard) {
-                var d = new Data();
-                d.mapStdev = await getMapStDevFromLeaderboard(this);
-                d.scorePPStDev = await getUserPPStDevFromLeaderboard(this);
-                d.userPPStDev = await getUserMedianPPFromLeaderboard(this);
-                d.mapCoef = await getMapCoefFromMapStdev(d.mapStdev);
-                d.userCoef = await getUserCoefFromscorePPStDev(d.scorePPStDev);
-                d.lbCoef = await getLbCoefFromuserPPStDev(d.userPPStDev);
-                d.finalCoef = d.mapCoef * (0.5 * d.userCoef) * d.lbCoef;
-                await this.setData(d);
-                return resolve(this);
-            }
-            return reject('Error: Invalid leaderboard')
-        })
-
-
-        return new Promise((resolve) => {
-            p.then((leaderboard) => {
-                console.log(leaderboard);
-                return resolve(leaderboard);
-            }).catch((err) => {
-                return console.error(err);
-            })
-        })
     }
 
     addScore(score) {
-        const p = new Promise((resolve, reject) => {
-            if (score instanceof Score) return resolve(this.scores.push(score));
-            return reject('Error: Invalid score')
-        })
+        if (!(score instanceof Score)) return;
+        return this.scores.push(score);
+    }
 
-        return new Promise((resolve) => {
-            p.then(() => {
-                return resolve(this);
-            }).catch((err) => {
-                return console.error(err);
-            })
+    removeScore(score_id) {
+        this.scores = this.scores.filter(score => score.score_id != score_id);
+    }
+
+    async getMods() {
+        if (this.mods) return this.mods;
+        const modLayer1 = [['DT', 'HR'], ['NC', 'HR'], ['HD', 'DT', 'HR'], ['HD', 'NC', 'HR'], ['DT', 'HR', 'FL'], ['NC', 'HR', 'FL'], ['DT', 'HR', 'NF'], ['NC', 'HR', 'NF'], ['HD', 'DT', 'HR', 'FL'], ['HD', 'NC', 'HR', 'FL'], ['HD', 'DT', 'HR', 'NF'], ['HD', 'NC', 'HR', 'NF']];
+        const modLayer2 = [['FL'], ['FL', 'HD'], ['FL', 'HR'], ['FL', 'DT'], ['FL', 'NC'], ['FL', 'HD', 'DT'], ['FL', 'HD', 'NC'], ['FL', 'HD', 'HR']];
+        const modLayer3 = [['EZ'], ['EZ', 'FL'], ['EZ', 'HD'], ['EZ', 'DT'], ['EZ', 'NC'], ['EZ', 'HD', 'DT'], ['EZ', 'HD', 'NC'], ['EZ', 'HD', 'FL']];
+        const modLayer4 = [['DT'], ['NC'], ['DT', 'HD'], ['NC', 'HD'], ['DT', 'NF'], ['NC', 'NF'], ['HD', 'DT', 'NF'], ['HD', 'NC', 'NF']];
+        const modLayer5 = [['HR'], ['HD', 'HR'], ['NF', 'HR'], ['HR', 'SO'], ['HR', 'SD'], ['HR', 'PF'], ['NF', 'HD', 'HR'], ['NF', 'SO', 'HR']];
+        const modLayer6 = [['HD'], ['HD', 'NF'], ['HD', 'SO'], ['HD', 'SD'], ['HD', 'PF'], ['HD', 'SO', 'NF']]
+        const modLayer7 = [['HT'], ['HT', 'HD'], ['HT', 'HR'], ['HT', 'EZ'], ['HT', 'FL'], ['HT', 'NF']]
+        const modLayer8 = [['NM'], ['NF'], ['SO'], ['SD'], ['PF'], ['NF', 'SO']]
+        await this.type == 'layer1' ? this.mods = modLayer1 : null;
+        await this.type == 'layer2' ? this.mods = modLayer2 : null;
+        await this.type == 'layer3' ? this.mods = modLayer3 : null;
+        await this.type == 'layer4' ? this.mods = modLayer4 : null;
+        await this.type == 'layer5' ? this.mods = modLayer5 : null;
+        await this.type == 'layer6' ? this.mods = modLayer6 : null;
+        await this.type == 'layer7' ? this.mods = modLayer7 : null;
+        await this.type == 'layer8' ? this.mods = modLayer8 : null;
+        return this.mods;
+    }
+
+    async getStdev() {
+        if (this.stdev) return this.stdev;
+        var pp_array = [];
+        var stdev;
+        this.scores.forEach(score => {
+            pp_array.push(score.pp);
+        });
+        if (pp_array.length == 0) return 0;
+
+
+        var variance = 0;
+        const sum = pp_array.reduce((acc, val) => acc + val);
+        const { length: num } = pp_array;
+        const median = sum / num;
+        pp_array.forEach(num => {
+            variance += ((num - median) * (num - median));
+        });
+        variance /= num;
+        stdev = Math.sqrt(variance);
+        this.stdev = parseFloat(stdev.toFixed(1));
+        if (!this.stdev) this.stdev = 0;
+        return this.stdev;
+    }
+
+    async getPercentile() {
+        if (this.percentile) return this.percentile;
+        var stdev = this.stdev;
+        var percentile = (2 / (Math.log10(0.6 * Math.pow(stdev, 0.2)))) - 8
+        percentile < 2 ? percentile = 2 : null;
+        percentile > 100 ? percentile = 100 : null;
+        this.percentile = parseFloat(percentile.toFixed(0));
+        return this.percentile;
+    }
+
+    async getAverage() {
+        if (this.average) return this.average;
+        const scores = this.scores;
+        const pp_array = [];
+        scores.forEach((score) => {
+            pp_array.push(score.pp);
         })
+        const average = pp_array => pp_array.reduce((a, b) => a + b, 0) / pp_array.length;
+        this.average = Math.round(average(pp_array));
+        !this.average ? this.average = 0 : null;
+        return this.average;
+    }
+
+    getScores() {
+        return this.scores;
+    }
+
+    async sortScores() {
+        var sortedScores = (this.scores.sort((a, b) => a.pp - b.pp)).reverse();
+        this.scores = sortedScores;
+        return sortedScores;
+    }
+
+    async reduceScores() {
+        const scores = this.scores;
+        const length = scores.length;
+        const percentile = await this.getPercentile();
+        var reduceAmount = (percentile / 100) * length;
+        reduceAmount < 1 ? reduceAmount = 1 : reduceAmount = Math.round(reduceAmount);
+        reduceAmount > 20 ? reduceAmount = 20 : null;
+        var reducedScores = [];
+        for (let i = 0; i < reduceAmount; i++) {
+            reducedScores.push(scores[i]);
+        }
+        if (reducedScores.length == 1 && !reducedScores[0]) {
+            reducedScores = [];
+        }
+        this.scores = reducedScores;
+        return this.scores;
     }
 }
 
@@ -132,7 +139,7 @@ async function login(client_id, client_secret) {
         p.then((result) => {
             return resolve(result);
         }).catch((err) => {
-            return console.error(err);
+            return reject(err);
         })
     })
 }
@@ -152,108 +159,9 @@ async function login_lazer(login, password) {
         p.then((result) => {
             return resolve(result);
         }).catch((err) => {
-            return console.error(err);
+            return reject(err);
         })
     })
-}
-
-// local function (no exports)
-async function getMapStDevFromLeaderboard(leaderboard) {
-    const p = new Promise(async (resolve, reject) => {
-        if (!leaderboard instanceof Leaderboard) return reject('Error: Invalid leaderboard');
-        var pp_array = [];
-        await leaderboard.scores.forEach(score => {
-            pp_array.push(score.pp);
-        });
-
-        const sum = pp_array.reduce((acc, val) => acc + val);
-        const { length: num } = pp_array;
-        const median = sum / num;
-        let variance = 0;
-        pp_array.forEach(num => {
-            variance += ((num - median) * (num - median));
-        });
-        variance /= num;
-        const stdev = Math.sqrt(variance);
-        return resolve(stdev);
-    })
-
-    var stdev = await p.then((result) => {
-        return result;
-    }).catch((err) => {
-        console.error(err);
-    })
-
-    return stdev;
-}
-
-// local function (no exports)
-async function getUserPPStDevFromLeaderboard(leaderboard) {
-    const p = new Promise(async (resolve, reject) => {
-        if (!leaderboard instanceof Leaderboard) return reject('Error: Invalid leaderboard');
-        var pp_array = [];
-        await leaderboard.scores.forEach(score => {
-            pp_array.push(score.user_pp);
-        });
-
-        const sum = pp_array.reduce((acc, val) => acc + val);
-        const { length: num } = pp_array;
-        const median = sum / num;
-        let variance = 0;
-        pp_array.forEach(num => {
-            variance += ((num - median) * (num - median));
-        });
-        variance /= num;
-        const stdev = Math.sqrt(variance);
-        return resolve(stdev);
-    })
-
-    var stdev = await p.then((result) => {
-        return result;
-    }).catch((err) => {
-        console.error(err);
-    })
-
-    return stdev;
-}
-
-// local function (no exports)
-async function getUserMedianPPFromLeaderboard(leaderboard) {
-    const p = new Promise(async (resolve, reject) => {
-        if (!leaderboard instanceof Leaderboard) return reject('Error: Invalid leaderboard');
-        var pp_array = [];
-        await leaderboard.scores.forEach(score => {
-            pp_array.push(score.user_pp);
-        });
-
-        const sum = pp_array.reduce((acc, val) => acc + val);
-        const { length: num } = pp_array;
-        const median = sum / num;
-        return resolve(median);
-    })
-
-    var median = await p.then((result) => {
-        return result;
-    }).catch((err) => {
-        console.error(err);
-    })
-
-    return median;
-}
-
-// local function (no exports)
-async function getMapCoefFromMapStdev(mapStdev) {
-    return 1.7 / Math.log10(mapStdev);
-}
-
-// local function (no exports)
-async function getUserCoefFromscorePPStDev(scorePPStDev) {
-    return 2.3 / Math.log10(scorePPStDev);
-}
-
-// local function (no exports)
-async function getLbCoefFromuserPPStDev(userPPStDev) {
-    return Math.log2(userPPStDev) - 12;
 }
 
 // local function (no exports)
@@ -261,131 +169,108 @@ function msleep(n) {
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, n);
 }
 
-
 // local function (no exports)
-async function getScore(api, score_id) {
+async function getLeaderboard(api, beatmap_id, mods) {
     const p = new Promise((resolve, reject) => {
-        api.scores.score.get('osu', score_id).then((score) => {
-            if (score.created_at) {
-                return resolve(score);
+        api.beatmap.scores.all(beatmap_id, { mode: 'osu', mods: mods }).then((leaderboard) => {
+            if (leaderboard.scores) {
+                return resolve(leaderboard);
             }
-            return reject('Error: Score parsing failed');
+            return reject('Error: Leaderboard parsing failed');
         });
     })
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         p.then((result) => {
             return resolve(result);
         }).catch((err) => {
-            return console.error(err);
+            return reject(err);
         })
     })
 }
 
-// local function (no exports)
-async function getBeatmap(api, beatmap_id) {
-    const p = new Promise((resolve, reject) => {
-        api.beatmap.get(beatmap_id).then((beatmap) => {
-            if (beatmap.last_updated) {
-                return resolve(beatmap);
-            }
-            return reject('Error: Beatmap parsing failed');
-        });
-    })
+async function createLayers() {
+    let l1 = new Layer('layer1');
+    await l1.getMods();
+    let l2 = new Layer('layer2');
+    await l2.getMods();
+    let l3 = new Layer('layer3');
+    await l3.getMods();
+    let l4 = new Layer('layer4');
+    await l4.getMods();
+    let l5 = new Layer('layer5');
+    await l5.getMods();
+    let l6 = new Layer('layer6');
+    await l6.getMods();
+    let l7 = new Layer('layer7');
+    await l7.getMods();
+    let l8 = new Layer('layer8');
+    await l8.getMods();
 
-    return new Promise((resolve) => {
-        p.then((result) => {
-            return resolve(result);
-        }).catch((err) => {
-            return console.error(err);
-        })
-    })
+    var layers = [l1, l2, l3, l4, l5, l6, l7, l8];
+
+    return layers;
 }
 
-// exports
-async function getLeaderboard(api, beatmap_id, mods, api_throttling) {
-    const p = new Promise(async (resolve, reject) => {
-       console.clear();
-        console.log(`Fetching leaderboard...`);
-        if (mods) {
-            await api.me.data('osu').then((auth_type) => {
-                if (auth_type.authentication === 'basic' || !auth_type.is_supporter) {
-                    console.warn(`Warning: Login must be done via login_lazer and supporter account credentials if you wish to use mod filters: Ignoring mod filters '${mods}'`);
-                    mods = null;
+async function fetchLeaderboards(layer, api, beatmap_id, throttling) {
+    const p = new Promise(async (resolve) => {
+        let allLb = [];
+        const mods = layer.mods;
+        for (const modCombo of mods) {
+            await getLeaderboard(api, beatmap_id, modCombo).then((lb) => {
+                for (const score of lb.scores) {
+                    allLb.push(score);
                 }
-            })
+            }).catch((err) => {
+                null;
+            });
+            msleep(throttling);
         }
-        api.beatmap.scores.all(beatmap_id, { mode: 'osu', mods: mods }).then(async (leaderboard) => {
-           console.clear();
-            if (!leaderboard.scores) return reject('Error: Leaderboard parsing failed');
-            const pleaderboard = new Promise(async (resolve) => {
-                console.log(`Fetching leaderboard users... (API Throttling: ${api_throttling}ms)`);
-                var l = new Leaderboard();
-                leaderboard?.scores?.forEach(async score => {
-                    await getUser(api, score.user?.id).then((user) => {
-                        l.addScore(new Score(score.id, score.user.id, score.pp, user.statistics.pp, score.mods));
-                        console.log([l.scores.length, leaderboard.scores.length]);
-                        msleep(api_throttling);
-                    })
-                    if (l.scores.length == leaderboard.scores.length) return resolve(l);
-                })
-            })
-            l = await pleaderboard;
-           console.clear();
+        resolve(allLb);
+    })
 
-            const pbeatmap = new Promise(async (resolve) => {
-                console.log(`Fetching beatmap...`);
-                await getBeatmap(api, beatmap_id).then(async (beatmap_data) => {
-                    await l.setBeatmap(new Beatmap(beatmap_data));
-                    return resolve(await l);
-                })
-            })
-            l = await pbeatmap;
-           console.clear();
-
-            const pdata = new Promise(async (resolve) => {
-                console.log(`Calculating...`);
-                await l.updateData();
-                return resolve(await l);
-            })
-            l = await pdata;
-           console.clear();
-
-            return resolve(await l);
-        });
+    const p2 = new Promise((resolve, reject) => {
+        p.then((result) => {
+            resolve(result);
+        }).catch((err) => {
+            reject(err);
+        })
     })
 
     return new Promise((resolve) => {
-        p.then((result) => {
-            return resolve(result);
+        p.then(async (lb) => {
+            for (const score of lb) {
+                if (score) {
+                    await layer.addScore(new Score(score.id, score.pp, score.mods))
+                }
+            }
+
+            resolve(layer);
         }).catch((err) => {
-            return console.error(err);
+            reject(err);
         })
     })
 }
 
-// local function (no exports)
-async function getUser(api, user_id) {
-    const p = new Promise((resolve, reject) => {
-        api.user.get(user_id, 'osu', 'id').then((user) => {
-            if (!user.is_restricted) {
-                return resolve(user);
-            }
-            return reject('Error: User parsing failed');
-        });
-    })
-
-    return new Promise((resolve) => {
-        p.then((result) => {
-            return resolve(result);
-        }).catch((err) => {
-            return console.error(err);
-        })
-    })
+async function computeLayers(api, beatmap_id, throttling) {
+    var layers = await createLayers();
+    var computedLayers = [];
+    for (const layer of layers) {
+        const l = await fetchLeaderboards(layer, api, beatmap_id, throttling);
+        await l.sortScores();
+        await l.getStdev();
+        await l.getPercentile();
+        await l.reduceScores();
+        await l.getAverage();
+        
+        computedLayers.push(l);
+        msleep(1000);
+    }
+    return computedLayers;
 }
 
 module.exports = {
     login,
     login_lazer,
-    getLeaderboard
+    computeLayers
 }
