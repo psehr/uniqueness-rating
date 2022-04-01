@@ -169,6 +169,17 @@ function msleep(n) {
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, n);
 }
 
+async function getLayerTypeFromMods(mods) {
+    if (mods.includes('HR') && (mods.includes('DT') || mods.includes('NC'))) return 'layer1';
+    if (mods.includes('FL') && !mods.includes('EZ') && !mods.includes('HT')) return 'layer2';
+    if (mods.includes('EZ') && !mods.includes('HT')) return 'layer3';
+    if (mods.includes('DT') || mods.includes('NC')) return 'layer4';
+    if (mods.includes('HR') && !mods.includes('HT')) return 'layer5';
+    if (mods.includes('HD') && !mods.includes('HT')) return 'layer6';
+    if (mods.includes('HT')) return 'layer7';
+    return 'layer8';
+}
+
 // local function (no exports)
 async function getLeaderboard(api, beatmap_id, mods) {
     const p = new Promise((resolve, reject) => {
@@ -272,5 +283,6 @@ async function computeLayers(api, beatmap_id, throttling) {
 module.exports = {
     login,
     login_lazer,
-    computeLayers
+    computeLayers,
+    getLayerTypeFromMods
 }
