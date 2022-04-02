@@ -5,6 +5,21 @@ class Score {
         this.score_id = score_id;
         this.pp = pp;
         this.mods = mods;
+        this.layerType = null;
+        this.uniqueness = null;
+    }
+
+    getUniqueness(layer) {
+        const layerPP = layer.average;
+        const scorePP = Math.round(this.pp);
+
+        const uniqueness = Math.round((scorePP / (layerPP-(layerPP/10))) * 100 - 100)
+        this.uniqueness = uniqueness;
+        return uniqueness;
+    }
+
+    setLayerType(type) {
+        this.layerType = type;
     }
 }
 
@@ -30,8 +45,8 @@ class Layer {
     async getMods() {
         if (this.mods) return this.mods;
         const modLayer1 = [['DT', 'HR'], ['NC', 'HR'], ['HD', 'DT', 'HR'], ['HD', 'NC', 'HR'], ['DT', 'HR', 'FL'], ['NC', 'HR', 'FL'], ['DT', 'HR', 'NF'], ['NC', 'HR', 'NF'], ['HD', 'DT', 'HR', 'FL'], ['HD', 'NC', 'HR', 'FL'], ['HD', 'DT', 'HR', 'NF'], ['HD', 'NC', 'HR', 'NF']];
-        const modLayer2 = [['FL'], ['FL', 'HD'], ['FL', 'HR'], ['FL', 'DT'], ['FL', 'NC'], ['FL', 'HD', 'DT'], ['FL', 'HD', 'NC'], ['FL', 'HD', 'HR']];
-        const modLayer3 = [['EZ'], ['EZ', 'FL'], ['EZ', 'HD'], ['EZ', 'DT'], ['EZ', 'NC'], ['EZ', 'HD', 'DT'], ['EZ', 'HD', 'NC'], ['EZ', 'HD', 'FL']];
+        const modLayer2 = [['FL'], ['FL', 'HD'], ['FL', 'HR'], ['FL', 'DT'], ['FL', 'NC'], ['FL', 'HD', 'DT'], ['FL', 'HD', 'NC'], ['FL', 'HD', 'HR'], ['EZ', 'FL'], ['EZ', 'HD', 'FL']];
+        const modLayer3 = [['EZ'], ['EZ', 'HD'], ['EZ', 'DT'], ['EZ', 'NC'], ['EZ', 'HD', 'DT'], ['EZ', 'HD', 'NC']];
         const modLayer4 = [['DT'], ['NC'], ['DT', 'HD'], ['NC', 'HD'], ['DT', 'NF'], ['NC', 'NF'], ['HD', 'DT', 'NF'], ['HD', 'NC', 'NF']];
         const modLayer5 = [['HR'], ['HD', 'HR'], ['NF', 'HR'], ['HR', 'SO'], ['HR', 'SD'], ['HR', 'PF'], ['NF', 'HD', 'HR'], ['NF', 'SO', 'HR']];
         const modLayer6 = [['HD'], ['HD', 'NF'], ['HD', 'SO'], ['HD', 'SD'], ['HD', 'PF'], ['HD', 'SO', 'NF']]
@@ -171,7 +186,7 @@ function msleep(n) {
 
 async function getLayerTypeFromMods(mods) {
     if (mods.includes('HR') && (mods.includes('DT') || mods.includes('NC'))) return 'layer1';
-    if (mods.includes('FL') && !mods.includes('EZ') && !mods.includes('HT')) return 'layer2';
+    if (mods.includes('FL') && !mods.includes('HT')) return 'layer2';
     if (mods.includes('EZ') && !mods.includes('HT')) return 'layer3';
     if (mods.includes('DT') || mods.includes('NC')) return 'layer4';
     if (mods.includes('HR') && !mods.includes('HT')) return 'layer5';
@@ -188,6 +203,25 @@ async function getLeaderboard(api, beatmap_id, mods) {
                 return resolve(leaderboard);
             }
             return reject('Error: Leaderboard parsing failed');
+        });
+    })
+
+    return new Promise((resolve, reject) => {
+        p.then((result) => {
+            return resolve(result);
+        }).catch((err) => {
+            return reject(err);
+        })
+    })
+}
+
+async function getScore(api, score_id) {
+    const p = new Promise((resolve, reject) => {
+        api.scores.score.get('osu', score_id).then((score) => {
+            if (score.created_at) {
+                return resolve(score);
+            }
+            return reject('Error: Score parsing failed');
         });
     })
 
@@ -280,9 +314,19 @@ async function computeLayers(api, beatmap_id, throttling) {
     return computedLayers;
 }
 
+async function getUniqueness(api, score_id, layers) {
+    const score_data = await getScore(api, score_id);
+    var score = new Score(score_data.id, score_data.pp, score_data.mods);
+    const layerType = await getLayerTypeFromMods(score.mods);
+    const layer = layers.filter(layer => layer.type == layerType);
+    score.getUniqueness(layer[0]);
+    score.setLayerType(layerType);
+    return score;
+}
+
 module.exports = {
     login,
     login_lazer,
     computeLayers,
-    getLayerTypeFromMods
+    getUniqueness
 }
