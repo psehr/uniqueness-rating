@@ -49,9 +49,9 @@ class Layer {
         const modLayer3 = [['EZ'], ['EZ', 'HD'], ['EZ', 'DT'], ['EZ', 'NC'], ['EZ', 'HD', 'DT'], ['EZ', 'HD', 'NC']];
         const modLayer4 = [['DT'], ['NC'], ['DT', 'HD'], ['NC', 'HD'], ['DT', 'NF'], ['NC', 'NF'], ['HD', 'DT', 'NF'], ['HD', 'NC', 'NF']];
         const modLayer5 = [['HR'], ['HD', 'HR'], ['NF', 'HR'], ['HR', 'SO'], ['HR', 'SD'], ['HR', 'PF'], ['NF', 'HD', 'HR'], ['NF', 'SO', 'HR']];
-        const modLayer6 = [['HD'], ['HD', 'NF'], ['HD', 'SO'], ['HD', 'SD'], ['HD', 'PF'], ['HD', 'SO', 'NF']]
-        const modLayer7 = [['HT'], ['HT', 'HD'], ['HT', 'HR'], ['HT', 'EZ'], ['HT', 'FL'], ['HT', 'NF']]
-        const modLayer8 = [['NM'], ['NF'], ['SO'], ['SD'], ['PF'], ['NF', 'SO']]
+        const modLayer6 = [['HD'], ['HD', 'NF'], ['HD', 'SO'], ['HD', 'SD'], ['HD', 'PF'], ['HD', 'SO', 'NF']];
+        const modLayer7 = [['HT'], ['HT', 'HD'], ['HT', 'HR'], ['HT', 'EZ'], ['HT', 'FL'], ['HT', 'NF']];
+        const modLayer8 = [['NM'], ['NF'], ['SO'], ['SD'], ['PF'], ['NF', 'SO']];
         await this.type == 'layer1' ? this.mods = modLayer1 : null;
         await this.type == 'layer2' ? this.mods = modLayer2 : null;
         await this.type == 'layer3' ? this.mods = modLayer3 : null;
@@ -120,8 +120,13 @@ class Layer {
         return sortedScores;
     }
 
-    async reduceScores() {
-        const scores = this.scores;
+    async reduceScores(optionalRemove) {
+        if (optionalRemove) {
+            optionalRemove.forEach(remove_id => {
+                this.removeScore(remove_id);
+            });
+        }
+        var scores = this.scores;
         const length = scores.length;
         const percentile = await this.getPercentile();
         var reduceAmount = (percentile / 100) * length;
@@ -297,7 +302,7 @@ async function fetchLeaderboards(layer, api, beatmap_id, throttling) {
     })
 }
 
-async function computeLayers(api, beatmap_id, throttling) {
+async function computeLayers(api, beatmap_id, throttling, optionalRemove) {
     var layers = await createLayers();
     var computedLayers = [];
     for (const layer of layers) {
@@ -305,7 +310,7 @@ async function computeLayers(api, beatmap_id, throttling) {
         await l.sortScores();
         await l.getStdev();
         await l.getPercentile();
-        await l.reduceScores();
+        await l.reduceScores(optionalRemove);
         await l.getAverage();
         
         computedLayers.push(l);
