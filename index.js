@@ -13,7 +13,9 @@ class Score {
         const layerPP = layer.average;
         const scorePP = Math.round(this.pp);
 
-        const uniqueness = Math.round((scorePP / (layerPP-(layerPP/10))) * 100 - 100)
+        var uniqueness = Math.round((scorePP / (layerPP-(layerPP/10))) * 100 - 100)
+        uniqueness < -100 ? uniqueness = -100 : null;
+        uniqueness > 100 ? uniqueness = 100 : null;
         this.uniqueness = uniqueness;
         return uniqueness;
     }
