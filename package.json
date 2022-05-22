@@ -1,6 +1,6 @@
 {
   "name": "uniqueness-rating",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Package for osu! uniqueness rating calculation",
   "main": "index.js",
   "engines": {
@@ -23,6 +23,6 @@
   },
   "homepage": "https://github.com/Oxyyy/uniqueness-rating#readme",
   "dependencies": {
-    "osu-api-extended": "^2.1.5"
+    "osu-api-extended": "2.1.5"
   }
 }

@@ -194,7 +194,6 @@ class UniquenessRequest {
                 (this.debug) ? console.timeEnd("Authentication") : null;
                 resolve()
             }).catch((err) => {
-                console.log("what")
                 console.error(err);
                 resolve()
             })
@@ -222,7 +221,7 @@ class UniquenessRequest {
                 resolve(parsed.layerParam);
             }).catch((err) => {
                 console.error(err);
-                resolve(null);
+                resolve();
             })
         })
     }
